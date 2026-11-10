@@ -156,7 +156,7 @@ function donnma_form_handle_reply() {
 			),
 			HOUR_IN_SECONDS
 		);
-		wp_safe_redirect( add_query_arg( 'df_reply_error', rawurlencode( $result->get_error_message() ), $back ) );
+		wp_safe_redirect( add_query_arg( 'df_reply_error', $result->get_error_code(), $back ) );
 		exit;
 	}
 	wp_safe_redirect( add_query_arg( 'df_reply_sent', $result ? 1 : 2, $back ) );
@@ -165,21 +165,39 @@ function donnma_form_handle_reply() {
 add_action( 'load-post.php', 'donnma_form_handle_reply', 5 );
 
 /**
+ * 返信のエラーの文言。コード => 文言
+ */
+function donnma_form_reply_error_messages() {
+	return array(
+		'df_no_email'   => '宛先のメールアドレスがありません。',
+		'df_spam'       => '迷惑メールには返信できません。',
+		'df_no_subject' => '件名を入れてください。',
+		'df_no_body'    => '本文を入れてください。',
+		'df_mail'       => 'メールを送れませんでした。時間をおいて、もう一度お試しください。',
+	);
+}
+
+function donnma_form_reply_error( $code ) {
+	$messages = donnma_form_reply_error_messages();
+	return new WP_Error( $code, $messages[ $code ] );
+}
+
+/**
  * @return true|false|WP_Error 送れて送信済みに保存できたら true、送れたが保存できなかったら false
  */
 function donnma_form_send_reply( $post, $subject, $body ) {
 	$email = (string) get_post_meta( $post->ID, '_df_email', true );
 	if ( $email === '' || ! is_email( $email ) ) {
-		return new WP_Error( 'df_no_email', '宛先のメールアドレスがありません。' );
+		return donnma_form_reply_error( 'df_no_email' );
 	}
 	if ( $post->post_status === 'df_spam' ) {
-		return new WP_Error( 'df_spam', '迷惑メールには返信できません。' );
+		return donnma_form_reply_error( 'df_spam' );
 	}
 	if ( $subject === '' ) {
-		return new WP_Error( 'df_no_subject', '件名を入れてください。' );
+		return donnma_form_reply_error( 'df_no_subject' );
 	}
 	if ( trim( $body ) === '' ) {
-		return new WP_Error( 'df_no_body', '本文を入れてください。' );
+		return donnma_form_reply_error( 'df_no_body' );
 	}
 
 	$from    = donnma_form_reply_from( $post->ID );
@@ -200,7 +218,7 @@ function donnma_form_send_reply( $post, $subject, $body ) {
 	remove_action( 'phpmailer_init', $capture );
 
 	if ( ! $sent ) {
-		return new WP_Error( 'df_mail', 'メールを送れませんでした。時間をおいて、もう一度お試しください。' );
+		return donnma_form_reply_error( 'df_mail' );
 	}
 
 	$saved = false;
@@ -231,6 +249,10 @@ function donnma_form_send_reply( $post, $subject, $body ) {
  * 送信元アドレスの「送信済み」フォルダ（Maildir）。なければ空文字。
  */
 function donnma_form_sent_maildir( $from ) {
+	// パスに使うので、英数字と . _ + - だけのアドレスに限る（/ や .. で別の場所を指さないように）
+	if ( ! preg_match( '/^[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+$/', $from ) || strpos( $from, '..' ) !== false ) {
+		return '';
+	}
 	$at = strrpos( $from, '@' );
 	if ( $at === false ) {
 		return '';
@@ -309,7 +331,10 @@ function donnma_form_reply_notice() {
 			. ( $saved ? '送信済みフォルダにも保存しました。' : '（送信済みフォルダには保存できませんでした）' ) . '</p></div>';
 	}
 	if ( isset( $_GET['df_reply_error'] ) ) {
-		echo '<div class="notice notice-error"><p>' . esc_html( sanitize_text_field( wp_unslash( $_GET['df_reply_error'] ) ) ) . '</p></div>';
+		// URL には文言ではなく番号（コード）だけを渡し、決まった文言を出す
+		$messages = donnma_form_reply_error_messages();
+		$code     = sanitize_key( wp_unslash( $_GET['df_reply_error'] ) );
+		echo '<div class="notice notice-error"><p>' . esc_html( $messages[ $code ] ?? '返信を送れませんでした。' ) . '</p></div>';
 	}
 }
 add_action( 'admin_notices', 'donnma_form_reply_notice' );

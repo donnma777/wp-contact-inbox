@@ -28,6 +28,13 @@ function donnma_form_clean_text( $value, $multiline ) {
 	return trim( $value );
 }
 
+/**
+ * 項目の文字数の上限。上限を空にした項目も、DONNMA_FORM_HARD_MAX 文字までにする。
+ */
+function donnma_form_max_length( $field ) {
+	return $field['max'] > 0 ? min( (int) $field['max'], DONNMA_FORM_HARD_MAX ) : DONNMA_FORM_HARD_MAX;
+}
+
 function donnma_form_length( $value ) {
 	return function_exists( 'mb_strlen' ) ? mb_strlen( $value, 'UTF-8' ) : (int) preg_match_all( '/./us', $value );
 }
@@ -76,10 +83,11 @@ function donnma_form_validate( $form, $raw ) {
 				$errors[ $name ] = '入力してください。';
 			} elseif ( count( $items ) > $field['repeat'] ) {
 				$errors[ $name ] = sprintf( '%d 個までにしてください。', $field['repeat'] );
-			} elseif ( $field['max'] > 0 ) {
+			} else {
+				$max = donnma_form_max_length( $field );
 				foreach ( $items as $i => $item ) {
-					if ( donnma_form_length( $item ) > $field['max'] ) {
-						$errors[ $name ] = sprintf( '%d 個目が長すぎます。%d 文字以内で入力してください。', $i + 1, $field['max'] );
+					if ( donnma_form_length( $item ) > $max ) {
+						$errors[ $name ] = sprintf( '%d 個目が長すぎます。%d 文字以内で入力してください。', $i + 1, $max );
 						break;
 					}
 				}
@@ -100,8 +108,9 @@ function donnma_form_validate( $form, $raw ) {
 			continue;
 		}
 
-		if ( $field['max'] > 0 && donnma_form_length( $value ) > $field['max'] ) {
-			$errors[ $name ] = sprintf( '%d 文字以内で入力してください。', $field['max'] );
+		$max = donnma_form_max_length( $field );
+		if ( donnma_form_length( $value ) > $max ) {
+			$errors[ $name ] = sprintf( '%d 文字以内で入力してください。', $max );
 			continue;
 		}
 
@@ -348,6 +357,8 @@ function donnma_form_handle_post() {
 		$GLOBALS['donnma_form_state'] = $state;
 		return;
 	}
+	// 保存まで進む送信は、迷惑メールと判定されたものも回数に数える（同じ IP から保存され続けないように）
+	donnma_form_count_send();
 
 	$text = donnma_form_build_text( $form, $values, $page_url );
 
@@ -371,8 +382,6 @@ function donnma_form_handle_post() {
 		// 受信一覧には残っているので、送信者には「送れた」と伝える
 		update_post_meta( $entry_id, '_df_mail_failed', 1 );
 	}
-
-	donnma_form_count_send();
 
 	// Discord Post Notify などへ知らせる。項目名（ラベル）=> 値
 	$labeled = array();

@@ -614,7 +614,7 @@ add_action( 'admin_post_df_entry_action', 'donnma_form_entry_action' );
 function donnma_form_csv_cell( $value ) {
 	$value = (string) $value;
 	// 表計算ソフトで式として動かないようにする
-	if ( $value !== '' && strpos( '=+-@', $value[0] ) !== false ) {
+	if ( $value !== '' && strpos( "=+-@\t\r", $value[0] ) !== false ) {
 		$value = "'" . $value;
 	}
 	return $value;

@@ -95,6 +95,7 @@ function donnma_form_build_from_post( $post, $forms ) {
 			'required' => ! empty( $row['required'] ),
 			'max'      => absint( $row['max'] ?? 0 ),
 			'rows'     => $type === 'textarea' ? absint( $row['rows'] ?? 0 ) : 0,
+			'repeat'   => donnma_form_can_repeat( $type ) ? min( 50, absint( $row['repeat'] ?? 0 ) ) : 0,
 			'options'  => array(),
 		);
 		if ( donnma_form_is_choice( $type ) ) {
@@ -304,6 +305,7 @@ function donnma_form_render_field_row( $i, $field ) {
 	echo '<textarea class="df-options" name="' . esc_attr( $prefix . '[options]' ) . '" rows="4" placeholder="1行に1つ"' . ( $choice ? '' : ' hidden' ) . '>' . esc_textarea( implode( "\n", $field['options'] ) ) . '</textarea>';
 	echo '<label class="df-max"' . ( $choice ? ' hidden' : '' ) . '>最大 <input type="number" min="0" class="small-text" name="' . esc_attr( $prefix . '[max]' ) . '" value="' . ( $field['max'] > 0 ? (int) $field['max'] : '' ) . '" /> 文字</label>';
 	echo '<label class="df-rows"' . ( $field['type'] === 'textarea' ? '' : ' hidden' ) . '>高さ <input type="number" min="0" class="small-text" name="' . esc_attr( $prefix . '[rows]' ) . '" value="' . ( $field['rows'] > 0 ? (int) $field['rows'] : '' ) . '" /> 行</label>';
+	echo '<label class="df-repeat-opt"' . ( donnma_form_can_repeat( $field['type'] ) ? '' : ' hidden' ) . ' title="空なら1つだけ。数を入れると、フォームで「＋ 追加」で欄を増やせます">くり返し 最大 <input type="number" min="0" max="50" class="small-text" name="' . esc_attr( $prefix . '[repeat]' ) . '" value="' . ( $field['repeat'] > 0 ? (int) $field['repeat'] : '' ) . '" /> 個</label>';
 	echo '</td>';
 	echo '<td><button type="button" class="button-link button-link-delete df-remove">削除</button></td>';
 	echo '</tr>';

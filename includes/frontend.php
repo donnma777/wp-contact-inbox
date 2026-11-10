@@ -60,7 +60,37 @@ function donnma_form_validate( $form, $raw ) {
 			continue;
 		}
 
-		$value           = is_scalar( $input ) ? donnma_form_clean_text( $input, $field['type'] === 'textarea' ) : '';
+		// くり返しの項目：空の欄は捨て、残りを順に並べる
+		if ( $field['repeat'] > 0 ) {
+			$items = array();
+			foreach ( (array) $input as $item ) {
+				if ( is_scalar( $item ) ) {
+					$item = donnma_form_clean_text( $item, $field['type'] === 'textarea' );
+					if ( $item !== '' ) {
+						$items[] = $item;
+					}
+				}
+			}
+			$values[ $name ] = $items;
+			if ( ! $items && $field['required'] ) {
+				$errors[ $name ] = '入力してください。';
+			} elseif ( count( $items ) > $field['repeat'] ) {
+				$errors[ $name ] = sprintf( '%d 個までにしてください。', $field['repeat'] );
+			} elseif ( $field['max'] > 0 ) {
+				foreach ( $items as $i => $item ) {
+					if ( donnma_form_length( $item ) > $field['max'] ) {
+						$errors[ $name ] = sprintf( '%d 個目が長すぎます。%d 文字以内で入力してください。', $i + 1, $field['max'] );
+						break;
+					}
+				}
+			}
+			continue;
+		}
+
+		$value = is_scalar( $input ) ? donnma_form_clean_text( $input, $field['type'] === 'textarea' ) : '';
+		if ( $field['type'] === 'slug' ) {
+			$value = strtolower( $value );
+		}
 		$values[ $name ] = $value;
 
 		if ( $value === '' ) {
@@ -89,6 +119,11 @@ function donnma_form_validate( $form, $raw ) {
 			case 'url':
 				if ( ! preg_match( '#^https?://#i', $value ) || ! filter_var( $value, FILTER_VALIDATE_URL ) ) {
 					$errors[ $name ] = 'http:// か https:// で始まる URL を入力してください。';
+				}
+				break;
+			case 'slug':
+				if ( ! preg_match( '/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $value ) ) {
+					$errors[ $name ] = '半角の英小文字・数字・ハイフンで入力してください（例：new-year-tea-room）。';
 				}
 				break;
 			case 'select':
@@ -150,7 +185,7 @@ function donnma_form_akismet_is_spam( $form, $values, $page_url ) {
 	$content = array();
 	foreach ( $form['fields'] as $field ) {
 		if ( $field['name'] !== $form['reply_to_field'] && $field['name'] !== $form['reply_name_field'] ) {
-			$content[] = donnma_form_value_text( $values[ $field['name'] ] );
+			$content[] = donnma_form_field_text( $field, $values[ $field['name'] ] );
 		}
 	}
 
@@ -212,8 +247,8 @@ function donnma_form_subject( $form, $values ) {
 function donnma_form_build_text( $form, $values, $page_url ) {
 	$lines = array();
 	foreach ( $form['fields'] as $field ) {
-		$value = donnma_form_value_text( $values[ $field['name'] ] );
-		if ( $field['type'] === 'textarea' ) {
+		$value = donnma_form_field_text( $field, $values[ $field['name'] ] );
+		if ( $field['type'] === 'textarea' || $field['repeat'] > 0 ) {
 			$lines[] = '';
 			$lines[] = $field['label'] . ':';
 			$lines[] = $value;
@@ -342,7 +377,7 @@ function donnma_form_handle_post() {
 	// Discord Post Notify などへ知らせる。項目名（ラベル）=> 値
 	$labeled = array();
 	foreach ( $form['fields'] as $field ) {
-		$labeled[ $field['label'] ] = donnma_form_value_text( $values[ $field['name'] ] );
+		$labeled[ $field['label'] ] = donnma_form_field_text( $field, $values[ $field['name'] ] );
 	}
 	do_action( 'dpn_form_submitted', $form['title'], $labeled );
 	do_action( 'donnma_form_sent', $form_id, $values, $entry_id );
@@ -366,6 +401,31 @@ function donnma_form_messages( $form ) {
 	);
 }
 
+/**
+ * くり返しの項目の1欄。$n を '__n__' にするとテンプレートになる（JavaScript が番号に置きかえる）。
+ */
+function donnma_form_render_repeat_item( $id, $name, $field, $n, $value ) {
+	$item_id = $id . '-' . $n;
+	$attrs   = ' id="' . esc_attr( $item_id ) . '" name="' . esc_attr( $name . '[]' ) . '"';
+	if ( $field['max'] > 0 ) {
+		$attrs .= ' maxlength="' . (int) $field['max'] . '"';
+	}
+	if ( $field['required'] && $n === 1 ) {
+		$attrs .= ' required aria-required="true"';
+	}
+	$out  = '<div class="df-repeat-item">';
+	$out .= '<label for="' . esc_attr( $item_id ) . '"><span class="df-repeat-label">' . esc_html( $field['label'] ) . ' <span class="df-repeat-n">' . esc_html( (string) $n ) . '</span></span></label>';
+	$out .= ' <button type="button" class="df-repeat-remove">削除</button><br />';
+	if ( $field['type'] === 'textarea' ) {
+		$rows = $field['rows'] > 0 ? $field['rows'] : 4;
+		$out .= '<textarea' . $attrs . ' rows="' . $rows . '" cols="40">' . esc_textarea( $value ) . '</textarea>';
+	} else {
+		$out .= '<input type="text"' . $attrs . ' value="' . esc_attr( $value ) . '" size="40" />';
+	}
+	$out .= '</div>';
+	return $out;
+}
+
 function donnma_form_render_field( $form_id, $field, $value, $error ) {
 	$id       = 'df-' . $form_id . '-' . $field['name'];
 	$name     = 'df[' . $field['name'] . ']';
@@ -375,7 +435,22 @@ function donnma_form_render_field( $form_id, $field, $value, $error ) {
 
 	$out = '<div class="df-field df-type-' . esc_attr( $field['type'] ) . '">';
 
-	if ( in_array( $field['type'], array( 'radio', 'checkbox' ), true ) ) {
+	if ( $field['repeat'] > 0 ) {
+		// くり返しの項目：欄を「＋ 追加」で増やせる。最初は入力のある数（なければ1つ）だけ出す
+		$items = array_values( (array) $value );
+		if ( ! $items ) {
+			$items = array( '' );
+		}
+		$out .= '<fieldset class="df-repeat" data-max="' . (int) $field['repeat'] . '"' . $describe . '><legend>' . esc_html( $field['label'] ) . ' ' . $mark . '<span class="df-repeat-note">（' . (int) $field['repeat'] . ' 個まで）</span></legend>';
+		$out .= '<div class="df-repeat-items">';
+		foreach ( $items as $i => $item ) {
+			$out .= donnma_form_render_repeat_item( $id, $name, $field, $i + 1, $item );
+		}
+		$out .= '</div>';
+		$out .= '<template class="df-repeat-template">' . donnma_form_render_repeat_item( $id, $name, $field, '__n__', '' ) . '</template>';
+		$out .= '<button type="button" class="df-repeat-add"' . ( count( $items ) >= $field['repeat'] ? ' hidden' : '' ) . '>＋ ' . esc_html( $field['label'] ) . 'を追加</button>';
+		$out .= '</fieldset>';
+	} elseif ( in_array( $field['type'], array( 'radio', 'checkbox' ), true ) ) {
 		$out .= '<fieldset' . $describe . '><legend>' . esc_html( $field['label'] ) . ' ' . $mark . '</legend>';
 		$picked = (array) $value;
 		foreach ( $field['options'] as $i => $option ) {
@@ -419,6 +494,10 @@ function donnma_form_render_field( $form_id, $field, $value, $error ) {
 					$out .= '<option value="' . esc_attr( $option ) . '"' . selected( $value, $option, false ) . '>' . esc_html( $option ) . '</option>';
 				}
 				$out .= '</select>';
+				break;
+
+			case 'slug':
+				$out .= '<input type="text"' . $attrs . ' value="' . esc_attr( $value ) . '" size="40" pattern="[a-zA-Z0-9]+(-[a-zA-Z0-9]+)*" title="半角の英小文字・数字・ハイフン（例：new-year-tea-room）" autocapitalize="off" spellcheck="false" placeholder="new-year-tea-room" />';
 				break;
 
 			default:
@@ -474,8 +553,34 @@ function donnma_form_shortcode( $atts ) {
 
 	// 二度押し防止
 	$out .= '<script>(function(f){if(!f)return;f.addEventListener("submit",function(){var b=f.querySelector("[type=submit]");setTimeout(function(){b.disabled=true;b.value="送信中…";},0);});})(document.querySelector("#df-' . esc_js( $form_id ) . ' form"));</script>';
+	$out .= donnma_form_repeat_script();
 
 	return $out;
+}
+
+/**
+ * くり返しの項目の「＋ 追加」「削除」。1ページに1回だけ、フォームのあとに出す。
+ */
+function donnma_form_repeat_script() {
+	static $printed = false;
+	if ( $printed ) {
+		return '';
+	}
+	$printed = true;
+	return '<script>(function(){'
+		. 'function fix(fs){var items=fs.querySelectorAll(".df-repeat-item");'
+		. 'items.forEach(function(it,i){var n=i+1,f=it.querySelector("textarea,input");'
+		. 'it.querySelector(".df-repeat-n").textContent=n;f.id=f.id.replace(/-[^-]*$/,"")+"-"+n;it.querySelector("label").htmlFor=f.id;'
+		. 'it.querySelector(".df-repeat-remove").hidden=items.length<=1;});'
+		. 'fs.querySelector(".df-repeat-add").hidden=items.length>=+fs.dataset.max;}'
+		. 'document.addEventListener("click",function(e){'
+		. 'var add=e.target.closest(".df-repeat-add"),rm=e.target.closest(".df-repeat-remove");if(!add&&!rm)return;'
+		. 'var fs=e.target.closest(".df-repeat"),box=fs.querySelector(".df-repeat-items");'
+		. 'if(add){var d=document.createElement("div");d.innerHTML=fs.querySelector(".df-repeat-template").innerHTML.split("__n__").join(box.children.length+1);'
+		. 'var it=d.firstElementChild;box.appendChild(it);fix(fs);it.querySelector("textarea,input").focus();}'
+		. 'else{var item=rm.closest(".df-repeat-item");if(box.children.length>1){item.remove();}else{item.querySelector("textarea,input").value="";}fix(fs);}});'
+		. 'document.querySelectorAll(".df-repeat").forEach(fix);'
+		. '})();</script>';
 }
 add_shortcode( 'donnma_form', 'donnma_form_shortcode' );
 
@@ -499,5 +604,10 @@ function donnma_form_style() {
 		. '.df-form .df-notice-ok{border-color:#46b450}'
 		. '.df-form .df-notice-ng{border-color:#d63638}'
 		. '.df-form .df-hp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}'
+		. '.df-form [hidden]{display:none!important}'
+		. '.df-form .df-repeat-item{margin:0 0 .9em}'
+		. '.df-form .df-repeat-note{font-size:.85em;opacity:.7;margin-left:.3em}'
+		. '.df-form .df-repeat-remove{background:none;border:0;padding:0;color:#b32d2e;text-decoration:underline;font-size:.85em;cursor:pointer}'
+		. '.df-form .df-repeat-add{cursor:pointer}'
 		. '</style>';
 }

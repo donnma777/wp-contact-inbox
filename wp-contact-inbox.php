@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Contact Inbox
  * Description: お問い合わせフォームと受信一覧。管理画面でフォームを作り、ブロック「フォーム」で表示します。送られた内容は受信一覧で見られ、管理画面から返信もできます。メールでも届き、Discord Post Notify が入っていれば Discord にも通知します。
- * Version: 2.0.0
+ * Version: 2.1.0
  * Author: donnma
  * Author URI: https://donnma.com/
  * Plugin URI: https://github.com/donnma777/wp-contact-inbox
@@ -16,7 +16,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // 関数名・設定名の donnma_form_ は、1.x（Donnma Form）から引き継いでいる
-define( 'DONNMA_FORM_VERSION', '2.0.0' );
+define( 'DONNMA_FORM_VERSION', '2.1.0' );
 define( 'DONNMA_FORM_FILE', __FILE__ );
 define( 'DONNMA_FORM_URL', plugin_dir_url( __FILE__ ) );
 

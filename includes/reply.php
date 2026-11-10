@@ -52,7 +52,7 @@ function donnma_form_reply_quote( $post ) {
 	$fields  = get_post_meta( $post->ID, '_df_fields', true );
 	$skip    = array( 'email' );
 	foreach ( is_array( $fields ) ? $fields : array() as $field ) {
-		$value = donnma_form_value_text( $field['value'] );
+		$value = donnma_form_field_text( $field, $field['value'] );
 		if ( $value === '' || in_array( $field['name'], $skip, true ) ) {
 			continue;
 		}

@@ -105,7 +105,8 @@ function donnma_form_save_entry( $form_id, $form, $values, $text, $page_url, $st
 		$fields[] = array(
 			'name'  => $field['name'],
 			'label' => $field['label'],
-			'value' => $values[ $field['name'] ],
+			'value'  => $values[ $field['name'] ],
+			'repeat' => $field['repeat'] > 0,
 		);
 	}
 
@@ -524,7 +525,7 @@ function donnma_form_entry_content_box( $post ) {
 	}
 	echo '<table class="df-entry-table">';
 	foreach ( $fields as $field ) {
-		$value = donnma_form_value_text( $field['value'] );
+		$value = donnma_form_field_text( $field, $field['value'] );
 		echo '<tr><th scope="row">' . esc_html( $field['label'] ) . '</th><td>';
 		echo $value !== '' ? nl2br( esc_html( $value ) ) : '<span class="df-muted">（なし）</span>';
 		echo '</td></tr>';
@@ -655,7 +656,7 @@ function donnma_form_export_csv() {
 		foreach ( (array) get_post_meta( $post->ID, '_df_fields', true ) as $field ) {
 			if ( is_array( $field ) && isset( $field['label'] ) ) {
 				$labels[ $field['label'] ] = true;
-				$values[ $field['label'] ] = donnma_form_value_text( $field['value'] );
+				$values[ $field['label'] ] = donnma_form_field_text( $field, $field['value'] );
 			}
 		}
 		$rows[] = array( $post, $values );

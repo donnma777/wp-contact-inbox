@@ -28,6 +28,7 @@ function donnma_form_field_types() {
 		'email'    => 'メールアドレス',
 		'tel'      => '電話番号',
 		'url'      => 'URL',
+		'slug'     => 'スラッグ（英小文字・数字・ハイフン）',
 		'textarea' => '複数行テキスト',
 		'select'   => 'プルダウン',
 		'radio'    => 'ラジオボタン',
@@ -116,12 +117,14 @@ function donnma_form_normalize( $form ) {
 				'required' => false,
 				'max'      => 0,
 				'rows'     => 0,
+				'repeat'   => 0,
 				'options'  => array(),
 			)
 		);
 		$field['required'] = (bool) $field['required'];
 		$field['max']      = (int) $field['max'];
 		$field['rows']     = (int) $field['rows'];
+		$field['repeat']   = donnma_form_can_repeat( $field['type'] ) ? max( 0, (int) $field['repeat'] ) : 0;
 		$field['options']  = array_values( (array) $field['options'] );
 		$fields[]          = $field;
 	}
@@ -152,8 +155,32 @@ function donnma_form_save_all( $forms ) {
 }
 
 /**
- * 値を1行の文字にする（チェックボックスは「, 」でつなぐ）。
+ * くり返し（「＋ 追加」で欄を増やす）にできる種類か。
  */
-function donnma_form_value_text( $value ) {
-	return is_array( $value ) ? implode( ', ', $value ) : (string) $value;
+function donnma_form_can_repeat( $type ) {
+	return in_array( $type, array( 'text', 'textarea' ), true );
+}
+
+/**
+ * 値を文字にする。チェックボックスは「, 」でつなぎ、くり返しの項目は (1) (2) … と番号を付けて行を分ける。
+ */
+function donnma_form_value_text( $value, $numbered = false ) {
+	if ( ! is_array( $value ) ) {
+		return (string) $value;
+	}
+	if ( ! $numbered ) {
+		return implode( ', ', $value );
+	}
+	$lines = array();
+	foreach ( array_values( $value ) as $i => $item ) {
+		$lines[] = '(' . ( $i + 1 ) . ') ' . $item;
+	}
+	return implode( "\n", $lines );
+}
+
+/**
+ * 項目の値を文字にする（項目の設定を見て番号を付けるか決める）。
+ */
+function donnma_form_field_text( $field, $value ) {
+	return donnma_form_value_text( $value, ! empty( $field['repeat'] ) );
 }

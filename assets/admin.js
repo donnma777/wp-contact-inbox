@@ -31,6 +31,7 @@
 		row.querySelector( '.df-options' ).hidden = ! choice;
 		row.querySelector( '.df-max' ).hidden = choice;
 		row.querySelector( '.df-rows' ).hidden = type !== 'textarea';
+		row.querySelector( '.df-repeat-opt' ).hidden = type !== 'text' && type !== 'textarea';
 	}
 
 	function usedNames() {

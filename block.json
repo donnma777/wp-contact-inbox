@@ -1,0 +1,22 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "donnma/form",
+	"title": "フォーム",
+	"category": "widgets",
+	"icon": "email-alt",
+	"description": "「お問い合わせ → フォームの編集」で作ったフォームを表示します。",
+	"keywords": [ "お問い合わせ", "問い合わせ", "フォーム", "contact", "form" ],
+	"attributes": {
+		"formId": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"html": false,
+		"customClassName": true,
+		"anchor": true
+	},
+	"editorScript": "donnma-form-block"
+}

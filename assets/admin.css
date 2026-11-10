@@ -1,0 +1,170 @@
+/* 受信一覧 */
+.post-type-df_entry tr.df-unread {
+	background: #f0f6fc;
+}
+.post-type-df_entry tr.df-unread .row-title {
+	font-weight: 700;
+}
+.post-type-df_entry .column-df_form {
+	width: 14%;
+}
+.post-type-df_entry .column-df_date {
+	width: 12%;
+}
+.df-muted {
+	color: #787c82;
+}
+.df-warn {
+	color: #d63638;
+}
+
+/* 1件の表示 */
+.df-entry-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+.df-entry-table th,
+.df-entry-table td {
+	padding: 10px 12px;
+	border-bottom: 1px solid #dcdcde;
+	vertical-align: top;
+	text-align: left;
+}
+.df-entry-table th {
+	width: 12em;
+	color: #50575e;
+	font-weight: 600;
+}
+.df-entry-table td {
+	font-size: 14px;
+	line-height: 1.7;
+	word-break: break-word;
+}
+.df-text {
+	white-space: pre-wrap;
+}
+.df-info dt {
+	font-weight: 600;
+	margin-top: 8px;
+}
+.df-info dd {
+	margin: 2px 0 0;
+	word-break: break-all;
+}
+.df-actions .button {
+	margin: 0 4px 6px 0;
+}
+.df-delete {
+	color: #b32d2e !important;
+	border-color: #b32d2e !important;
+}
+
+/* フォームの編集 */
+.df-shortcode {
+	width: 18em;
+	font-family: Consolas, Monaco, monospace;
+}
+.df-fields td,
+.df-fields th {
+	vertical-align: top;
+}
+.df-fields .df-label {
+	width: 100%;
+	min-width: 10em;
+}
+.df-fields .df-name {
+	width: 8em;
+}
+.df-fields .df-move {
+	width: 2.5em;
+	white-space: nowrap;
+}
+.df-fields .df-move .button-link {
+	display: block;
+	line-height: 1.2;
+	text-decoration: none;
+}
+.df-fields .df-center {
+	text-align: center;
+	width: 3em;
+}
+.df-fields .df-options {
+	width: 100%;
+	min-width: 14em;
+}
+.df-fields .df-detail label {
+	display: inline-block;
+	margin-right: 1em;
+	white-space: nowrap;
+}
+.df-fields [hidden] {
+	display: none !important;
+}
+@media (max-width: 782px) {
+	.df-fields thead {
+		display: none;
+	}
+	.df-fields tr {
+		display: block;
+		border-bottom: 1px solid #dcdcde;
+		padding: 8px 0;
+	}
+	.df-fields td {
+		display: inline-block;
+		width: auto;
+	}
+	.df-fields td:nth-child(2),
+	.df-fields .df-detail {
+		display: block;
+	}
+}
+
+/* 状態のバッジ */
+.df-badge {
+	display: inline-block;
+	padding: 1px 8px;
+	border-radius: 10px;
+	font-size: 12px;
+	line-height: 1.7;
+	white-space: nowrap;
+}
+.df-badge-unread {
+	background: #2271b1;
+	color: #fff;
+}
+.df-badge-read {
+	background: #f0f0f1;
+	color: #50575e;
+}
+.df-badge-replied {
+	background: #00a32a;
+	color: #fff;
+}
+.df-badge-spam {
+	background: #d63638;
+	color: #fff;
+}
+.post-type-df_entry .column-df_state {
+	width: 6.5em;
+}
+
+/* 返信 */
+.df-reply-item {
+	border-left: 4px solid #00a32a;
+	padding: 4px 12px;
+	margin: 0 0 12px;
+	background: #f6f7f7;
+}
+.df-reply-item p {
+	margin: 4px 0;
+}
+.df-reply-item pre {
+	background: #fff;
+	padding: 8px;
+	max-height: 320px;
+	overflow: auto;
+}
+.df-reply-form textarea {
+	font-family: inherit;
+	line-height: 1.7;
+}

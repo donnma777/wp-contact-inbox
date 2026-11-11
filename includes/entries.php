@@ -95,6 +95,19 @@ function donnma_form_register_entry_type() {
 add_action( 'init', 'donnma_form_register_entry_type' );
 
 /**
+ * Jetpack の同期（Sync）で、受信の中身を WordPress.com に送らない。
+ * Jetpack Social などを入れているサイトでは、投稿タイプごとサイトのデータが送られるため。
+ * 送られるのは ID・更新日時・投稿タイプだけになる（Jetpack の照合用）。
+ */
+function donnma_form_jetpack_sync_block( $prevent, $post ) {
+	if ( is_object( $post ) && isset( $post->post_type ) && DONNMA_FORM_ENTRY === $post->post_type ) {
+		return true;
+	}
+	return $prevent;
+}
+add_filter( 'jetpack_sync_prevent_sending_post_data', 'donnma_form_jetpack_sync_block', 10, 2 );
+
+/**
  * 受信を保存する。
  *
  * @return int 投稿 ID（失敗したら 0）

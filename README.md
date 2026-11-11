@@ -12,7 +12,7 @@ WordPress のお問い合わせフォームと受信一覧のプラグインで�
 | 1件の画面 | 内容の確認、管理画面からの返信（ひな形と元の問い合わせの引用つき）、返信の履歴、迷惑メールの切り替え |
 
 - 送られた内容はメールでも届きます。送信者のメールアドレスは返信先（Reply-To）に入ります
-- [Discord Post Notify](https://github.com/donnma777/discord-post-notify) が入っていれば、Discord にも通知します
+- [SNS Post](https://github.com/donnma777/wp-sns-post) か [Discord Post Notify](https://github.com/donnma777/discord-post-notify) が入っていれば、Discord にも通知します
 - WordPress の「ツール → 個人データのエクスポート／消去」に対応しています（送信者のメールアドレスで受信を探します）。「設定 → プライバシー」のポリシーガイドに文例も出します
 - Xserver では、管理画面から送った返信を、送信元アドレスのメールボックスの「送信済み」にも保存します。IMAP でつないだメールソフトから、そのままやり取りを続けられます
 

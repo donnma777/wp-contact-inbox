@@ -383,11 +383,12 @@ function donnma_form_handle_post() {
 		update_post_meta( $entry_id, '_df_mail_failed', 1 );
 	}
 
-	// Discord Post Notify などへ知らせる。項目名（ラベル）=> 値
+	// SNS Post・Discord Post Notify などへ知らせる。項目名（ラベル）=> 値
 	$labeled = array();
 	foreach ( $form['fields'] as $field ) {
 		$labeled[ $field['label'] ] = donnma_form_field_text( $field, $values[ $field['name'] ] );
 	}
+	do_action( 'dsp_form_submitted', $form['title'], $labeled );
 	do_action( 'dpn_form_submitted', $form['title'], $labeled );
 	do_action( 'donnma_form_sent', $form_id, $values, $entry_id );
 
